@@ -1,42 +1,66 @@
 import json
-
-# import requests
+from utils.clients import table
+from boto3.dynamodb.conditions import Key
 
 
 def lambda_handler(event, context):
-    """Sample pure Lambda function
+    """Sample pure Lambda function"""
+    try:
+        # Extract regid from the query parameters
+        regid = event.get('queryStringParameters', {}).get('regid')
 
-    Parameters
-    ----------
-    event: dict, required
-        API Gateway Lambda Proxy Input Format
+        if regid:
+            # Retrieve a single employee by regid
+            response = table.query(
+                KeyConditionExpression=Key('regid').eq(regid)
+            )
 
-        Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+            if response.get('Items'):
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps({
+                        "message": "Employee details found",
+                        "success": True,
+                        "employees": response['Items']
+                    })
+                }
+            else:
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps({
+                        "message": "Employee details not found",
+                        "success": False,
+                        "employees": []
+                    })
+                }
+        else:
+            # Retrieve all employees
+            response = table.scan()
 
-    context: object, required
-        Lambda Context runtime methods and attributes
-
-        Context doc: https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
-
-    Returns
-    ------
-    API Gateway Lambda Proxy Output Format: dict
-
-        Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-    """
-
-    # try:
-    #     ip = requests.get("http://checkip.amazonaws.com/")
-    # except requests.RequestException as e:
-    #     # Send some context about this error to Lambda Logs
-    #     print(e)
-
-    #     raise e
-
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": "hello world",
-            # "location": ip.text.replace("\n", "")
-        }),
-    }
+            if response.get('Items'):
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps({
+                        "message": "Employee details found",
+                        "success": True,
+                        "employees": response['Items']
+                    })
+                }
+            else:
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps({
+                        "message": "Employee details not found",
+                        "success": False,
+                        "employees": []
+                    })
+                }
+    except Exception as e:
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                "message": f"Error: {str(e)}",
+                "success": False,
+                "employees": []
+            })
+        }

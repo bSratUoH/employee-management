@@ -1,42 +1,55 @@
 import json
-
-# import requests
+from botocore.exceptions import ClientError
+from lambda_functions.create_employees.app import validateEmployeeData
+from utils.clients import table
 
 
 def lambda_handler(event, context):
-    """Sample pure Lambda function
+    """Sample pure Lambda function"""
 
-    Parameters
-    ----------
-    event: dict, required
-        API Gateway Lambda Proxy Input Format
-
-        Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
-
-    context: object, required
-        Lambda Context runtime methods and attributes
-
-        Context doc: https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
-
-    Returns
-    ------
-    API Gateway Lambda Proxy Output Format: dict
-
-        Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-    """
-
-    # try:
-    #     ip = requests.get("http://checkip.amazonaws.com/")
-    # except requests.RequestException as e:
-    #     # Send some context about this error to Lambda Logs
-    #     print(e)
-
-    #     raise e
-
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": "hello world",
-            # "location": ip.text.replace("\n", "")
-        }),
-    }
+    try:
+        # taking requested data in request body
+        request_body = json.loads(event['body'])
+        
+        # Validate data types and required keys
+        validateEmployeeData(request_body, include_regid=True)
+        
+        # Check if employee with regid exists
+        regid = request_body['regid']
+        response = table.get_item(Key={'regid': regid})
+        if 'Item' not in response:
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'message': 'No employee found with this regid',
+                    'success': False
+                })
+            }
+            
+    # Bad request response
+    except ValueError as e:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({
+                'message': 'Invalid body request: ' + str(e),
+                'success': False
+            })
+        }
+    
+    # Exception handling for DynamoDB errors
+    except ClientError as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'message': 'Employee updation failed: ' + str(e),
+                'success': False
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'message': f'Employee creation failed: {e}',
+                'success': False
+            })
+        }
