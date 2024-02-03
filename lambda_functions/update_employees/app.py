@@ -1,11 +1,13 @@
 import json
 from botocore.exceptions import ClientError
 from lambda_functions.create_employees.app import validateEmployeeData
-from utils.clients import table
+from utils.ddbHelper import DDBHelper
+
+ddbHelperObj = DDBHelper()
 
 
 def lambda_handler(event, context):
-    """Sample pure Lambda function"""
+    """Lambda function to update an employee detail"""
 
     try:
         # taking requested data in request body
@@ -15,13 +17,25 @@ def lambda_handler(event, context):
         validateEmployeeData(request_body, include_regid=True)
         
         # Check if employee with regid exists
-        regid = request_body['regid']
-        response = table.get_item(Key={'regid': regid})
-        if 'Item' not in response:
+        regId = request_body['regid']
+        resp = ddbHelperObj.getItem(pk=regId)
+
+        if 'Item' not in resp:
             return {
                 'statusCode': 200,
                 'body': json.dumps({
-                    'message': 'No employee found with this regid',
+                    'message': 'No employee found with the given details',
+                    'success': False
+                })
+            }
+        
+        else:
+            print(request_body)
+            ddbHelperObj.updateItem(request_body)
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'message': 'Detail updated',
                     'success': False
                 })
             }

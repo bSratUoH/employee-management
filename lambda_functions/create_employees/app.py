@@ -1,8 +1,12 @@
 import json
-import uuid
-from datetime import datetime
 from botocore.exceptions import ClientError
-from utils.clients import table
+from utils.connection import table
+from utils.utils import getEmployeeId
+from utils.ddbHelper import DDBHelper
+
+
+ddbHelperObj = DDBHelper()
+
 
 def lambda_handler(event, context):
     try:
@@ -15,8 +19,8 @@ def lambda_handler(event, context):
         
         # Check for duplicate email
         email = request_body['email']
-        response = table.get_item(Key={'email': email})
-        if 'Item' in response:
+        resp = ddbHelperObj.getItems(sk=email)
+        if 'Item' in resp:
             return {
                 'statusCode': 200,
                 'body': json.dumps({
@@ -26,9 +30,9 @@ def lambda_handler(event, context):
             }
         
         # to get unique employee id
-        regid = generate_employee_id()
+        regid = getEmployeeId()
         request_body['regid'] = regid
-        table.put_item(Item=request_body)
+        resp = ddbHelperObj.putItem(request_body)
         
         return {
             'statusCode': 200,
@@ -93,8 +97,3 @@ def validateEmployeeData(request_body, include_regid=False):
     for key, data_type in data_types.items():
         if key in request_body and not isinstance(request_body[key], data_type):
             raise ValueError("Invalid data type")
-        
-        
-def generate_employee_id():
-    # Generate a unique employee ID using UUID4
-    return "emp{}".format(str(uuid.uuid4()))

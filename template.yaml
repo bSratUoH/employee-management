@@ -77,9 +77,12 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: lambda_functions/create_employees
+      FunctionName: createEmployeeDetails
       Handler: app.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
+      Layers:
+        - !Ref EmployeeLambdaLayer
       Events:
         Post:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -92,9 +95,12 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: lambda_functions/delete_employees
+      FunctionName: deleteEmployeeDetails
       Handler: app.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
+      Layers:
+        - !Ref EmployeeLambdaLayer
       Events:
         Delete:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -107,9 +113,12 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: lambda_functions/get_employees
+      FunctionName: getEmployeeDetails
       Handler: app.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
+      Layers:
+        - !Ref EmployeeLambdaLayer
       Events:
         Get:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -122,9 +131,12 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: lambda_functions/update_employees
+      FunctionName: updateEmployeeDetails
       Handler: app.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
+      Layers:
+        - !Ref EmployeeLambdaLayer
       Events:
         Update:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -132,6 +144,16 @@ Resources:
             RestApiId: !Ref EmployeeAPIGateway
             Path: /employees
             Method: put
+
+  EmployeeLambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: employeeLambdaLayer
+      ContentUri: utils
+      CompatibleRuntimes:
+        - python3.9
+    Metadata:
+      BuildMethod: python3.9
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group

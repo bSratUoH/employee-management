@@ -1,36 +1,28 @@
 import json
-from utils.clients import table
-from boto3.dynamodb.conditions import Key
+from utils.connection import table
+from utils.ddbHelper import DDBHelper
+
+ddbHelperObj = DDBHelper()
 
 
 def lambda_handler(event, context):
     """Sample pure Lambda function"""
     try:
         # Extract regid from the query parameters
-        regid = event.get('queryStringParameters', {}).get('regid')
+        queryParams = event.get('queryStringParameters', {})
+        regId = queryParams["regid"] if queryParams else None
 
-        if regid:
+        if regId:
             # Retrieve a single employee by regid
-            response = table.query(
-                KeyConditionExpression=Key('regid').eq(regid)
-            )
+            resp = ddbHelperObj.queryDDB(regId)
 
-            if response.get('Items'):
+            if resp.get('Items'):
                 return {
                     'statusCode': 200,
                     'body': json.dumps({
                         "message": "Employee details found",
                         "success": True,
-                        "employees": response['Items']
-                    })
-                }
-            else:
-                return {
-                    'statusCode': 200,
-                    'body': json.dumps({
-                        "message": "Employee details not found",
-                        "success": False,
-                        "employees": []
+                        "employees": resp['Items']
                     })
                 }
         else:
@@ -46,8 +38,8 @@ def lambda_handler(event, context):
                         "employees": response['Items']
                     })
                 }
-            else:
-                return {
+            
+        return {
                     'statusCode': 200,
                     'body': json.dumps({
                         "message": "Employee details not found",
@@ -64,3 +56,5 @@ def lambda_handler(event, context):
                 "employees": []
             })
         }
+    
+    
