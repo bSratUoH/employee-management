@@ -15,12 +15,6 @@ Globals:
       LogFormat: JSON
 
 Resources:
-  EmployeeAPIGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: employeeManagement
-      StageName: DEV
-    
   EmployeeDDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -33,11 +27,19 @@ Resources:
       KeySchema: 
         - AttributeName: regId
           KeyType: HASH
-        - AttributeName: email
-          KeyType: RANGE
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        - IndexName: EmployeeEmailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput: 
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
   
   EmployeeFunctionsRole:
     Type: 'AWS::IAM::Role'
@@ -71,14 +73,18 @@ Resources:
                   - 'dynamodb:PutItem'
                   - 'dynamodb:UpdateItem'
                   - 'dynamodb:DeleteItem'
-                Resource: !GetAtt EmployeeDDBTable.Arn
+                  - 'dynamodb:Scan'
+                Resource: 
+                  - !GetAtt EmployeeDDBTable.Arn
+                  - !Sub ${EmployeeDDBTable.Arn}/index/*
+                  # - "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Books/index/*"
 
   CreateEmployees:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: lambda_functions/create_employees
       FunctionName: createEmployeeDetails
-      Handler: app.lambda_handler
+      Handler: lambda_function.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
       Layers:
@@ -90,13 +96,18 @@ Resources:
             RestApiId: !Ref EmployeeAPIGateway
             Path: /employees
             Method: post
+            RequestModel:
+              Model: CreateEmployeeModel
+              Required: true
+              ValidateBody: true
+              ValidateParameters: true
 
   DeleteEmployees:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: lambda_functions/delete_employees
       FunctionName: deleteEmployeeDetails
-      Handler: app.lambda_handler
+      Handler: lambda_function.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
       Layers:
@@ -113,8 +124,8 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: lambda_functions/get_employees
-      FunctionName: getEmployeeDetails
-      Handler: app.lambda_handler
+      FunctionName: getEmployeesDetails
+      Handler: lambda_function.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
       Layers:
@@ -132,7 +143,7 @@ Resources:
     Properties:
       CodeUri: lambda_functions/update_employees
       FunctionName: updateEmployeeDetails
-      Handler: app.lambda_handler
+      Handler: lambda_function.lambda_handler
       Runtime: python3.9
       Role: !GetAtt EmployeeFunctionsRole.Arn
       Layers:
@@ -144,12 +155,17 @@ Resources:
             RestApiId: !Ref EmployeeAPIGateway
             Path: /employees
             Method: put
+            RequestModel:
+              Model: UpdateEmployeeModel
+              Required: true
+              ValidateBody: true
+              ValidateParameters: true
 
   EmployeeLambdaLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
       LayerName: employeeLambdaLayer
-      ContentUri: utils
+      ContentUri: lambda_layer
       CompatibleRuntimes:
         - python3.9
     Metadata:
@@ -170,16 +186,158 @@ Resources:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
 
-# Outputs:
-#   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-#   # Find out more about other implicit resources you can reference within SAM
-#   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-#   HelloWorldApi:
-#     Description: API Gateway endpoint URL for Prod stage for Hello World function
-#     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-#   HelloWorldFunction:
-#     Description: Hello World Lambda Function ARN
-#     Value: !GetAtt HelloWorldFunction.Arn
-#   HelloWorldFunctionIamRole:
-#     Description: Implicit IAM Role created for Hello World function
-#     Value: !GetAtt HelloWorldFunctionRole.Arn
+  EmployeeAPIGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: employeeManagement
+      StageName: DEV
+      Models:
+        UpdateEmployeeModel:
+          type: object
+          properties:
+            name:
+              type: string
+            regId:
+              type: string
+            email:
+              type: string
+            age:
+              type: integer
+            gender:
+              type: string
+            phoneNo:
+              type: string
+            addressDetails: 
+              type: object
+              properties:
+                hno:
+                  type: string
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+            workExperience:
+              type: array
+              items:
+                type: object
+                properties:
+                  companyName:
+                    type: string
+                  fromDate:
+                    type: string
+                  toDate:
+                    type: string
+                  address:
+                    type: string
+            qualifications:
+              type: array
+              items:
+                type: object
+                properties:
+                  qualificationName:
+                    type: string
+                  fromDate:
+                    type: string
+                  toDate:
+                    type: string
+                  percentage:
+                    type: integer
+            projects:
+              type: array
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  description:
+                    type: string
+            photo:
+              type: string
+          required:
+            - name
+            - email
+            - age
+            - gender
+            - phoneNo
+            - addressDetails
+            - workExperience
+            - qualifications
+            - projects
+            - photo
+            - regId
+
+        CreateEmployeeModel:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            age:
+              type: integer
+            gender:
+              type: string
+            phoneNo:
+              type: string
+            addressDetails: 
+              type: object
+              properties:
+                hno:
+                  type: string
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+            workExperience:
+              type: array
+              items:
+                type: object
+                properties:
+                  companyName:
+                    type: string
+                  fromDate:
+                    type: string
+                  toDate:
+                    type: string
+                  address:
+                    type: string
+            qualifications:
+              type: array
+              items:
+                type: object
+                properties:
+                  qualificationName:
+                    type: string
+                  fromDate:
+                    type: string
+                  toDate:
+                    type: string
+                  percentage:
+                    type: integer
+            projects:
+              type: array
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  description:
+                    type: string
+            photo:
+              type: string
+          required:
+            - name
+            - email
+            - age
+            - gender
+            - phoneNo
+            - addressDetails
+            - workExperience
+            - qualifications
+            - projects
+            - photo
+

@@ -1,0 +1,2 @@
+employeeTable = 'employee'
+empGlobalIndex = "EmployeeEmailIndex"
