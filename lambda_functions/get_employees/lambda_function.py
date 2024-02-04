@@ -1,6 +1,7 @@
 import simplejson as json
 from utilities.ddbHelper import DDBHelper
 from utilities.utils import lambdaExceptionWrapper
+from utilities.logger import logger
 
 ddbHelperObj = DDBHelper()
 
@@ -10,7 +11,7 @@ def lambda_handler(event, context):
         
     # Extract regid from the query parameters
     queryParams = event.get('queryStringParameters', {})
-    print(queryParams)
+    logger.info(queryParams)
     regId = queryParams["regId"] if queryParams else None
 
     if regId:

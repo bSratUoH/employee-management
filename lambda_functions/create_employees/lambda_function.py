@@ -15,8 +15,7 @@ def lambda_handler(event, context):
     # Check if employee already exists
     email = reqBody['email']
     resp = ddbHelperObj.queryDDB(email)
-    print(resp)
-
+    
     if resp.get("Items"):
         return {
             'statusCode': 200,

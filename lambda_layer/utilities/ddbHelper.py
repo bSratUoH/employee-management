@@ -51,7 +51,6 @@ class DDBHelper:
         del items["regId"]
 
         updateParams = self.build_update_params(items, items.keys())
-        print(updateParams)
         resp = empTable.update_item(
             Key={'regId': regId},
             UpdateExpression=updateParams["UpdateExpression"],
