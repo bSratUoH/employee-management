@@ -92,5 +92,3 @@ class DDBHelper:
             "ExpressionAttributeNames": expressionAttributeNames,
             "ExpressionAttributeValues": expressionAttributeValues,
         }
-
-    

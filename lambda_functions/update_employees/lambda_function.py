@@ -6,6 +6,10 @@ ddbHelperObj = DDBHelper()
 
 @lambdaExceptionWrapper()
 def lambda_handler(event, context):
+    """
+    This function is designed to receive a request body, validate its content,
+    and proceed to update the employee record once the validation is successful.
+    """
         
     # taking requested data in request body
     request_body = json.loads(event['body'])

@@ -7,6 +7,10 @@ ddbHelperObj = DDBHelper()
 
 @lambdaExceptionWrapper()
 def lambda_handler(event, context):
+    """
+    This function will accept an empid in the request body, validate its correctness, 
+    and proceed to delete the corresponding employee information upon successful validation
+    """
         
     # Extract regid from the request body
     request_body = json.loads(event['body'])

@@ -1,17 +1,21 @@
 import simplejson as json
 from utilities.ddbHelper import DDBHelper
 from utilities.utils import lambdaExceptionWrapper
-from utilities.logger import logger
 
 ddbHelperObj = DDBHelper()
 
 
 @lambdaExceptionWrapper()
 def lambda_handler(event, context):
+    """
+    Accepts an empid through query parameters.
+    Retrieves and returns specific employee information for the given empid.
+    If no parameter is provided, it returns information for all employees.
+    """
         
     # Extract regid from the query parameters
     queryParams = event.get('queryStringParameters', {})
-    logger.info(queryParams)
+    
     regId = queryParams["regId"] if queryParams else None
 
     if regId:
